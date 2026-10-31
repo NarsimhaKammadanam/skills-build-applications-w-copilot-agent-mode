@@ -37,6 +37,10 @@ OctoFit Tracker is a three-tier application for a school fitness program. The st
 - Workout suggestions approach: Match a user by email and base the recommendation focus on their goal or recent activity, with an explanatory reason.
 
 ## Test plan
+Use failing tests and explicit contracts to bound Copilot's work.
+Implement and test Mongoose data models and representative seed data.
+Implement and test Express API behavior, including validation and error states.
+Implement and test React routes and API-driven user experiences.
 
 - Data tier: `npm run test:data --prefix octofit-tracker/backend` — failures indicate model, persistence, or seed-data issues.
 - API: `npm run test:api --prefix octofit-tracker/backend` — failures indicate incorrect route behavior, validation, responses, or status codes.
