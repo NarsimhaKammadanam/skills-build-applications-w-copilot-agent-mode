@@ -1,8 +1,17 @@
 import { Router } from 'express';
-import { createActivity, createTeam, getLeaderboard, listActivities, listTeams, suggestWorkouts } from '../services/octofitService.js';
+import { createActivity, createTeam, getLeaderboard, getUserProfile, listActivities, listTeams, listUsers, suggestWorkouts, updateUserProfile } from '../services/octofitService.js';
 
 export const apiRouter = Router();
 
+apiRouter.get('/users', async (_request, response, next) => {
+  try { response.json({ users: await listUsers() }); } catch (error) { next(error); }
+});
+apiRouter.get('/users/:userId', async (request, response, next) => {
+  try { response.json({ user: await getUserProfile(request.params.userId) }); } catch (error) { next(error); }
+});
+apiRouter.patch('/users/:userId', async (request, response, next) => {
+  try { response.json({ user: await updateUserProfile(request.params.userId, request.body) }); } catch (error) { next(error); }
+});
 apiRouter.get('/activities', async (_request, response, next) => {
   try { response.json({ activities: await listActivities() }); } catch (error) { next(error); }
 });
