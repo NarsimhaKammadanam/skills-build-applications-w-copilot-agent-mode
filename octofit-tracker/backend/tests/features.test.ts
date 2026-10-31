@@ -57,12 +57,25 @@ it('lists profiles, summarizes fitness history, and updates only profile fields'
   expect((await request(app).get(`/api/users/${new mongoose.Types.ObjectId()}`)).status).toBe(404);
 });
 
-it('reconciles membership when a new team receives an existing user', async () => {
+it('preserves existing memberships instead of implicitly moving users', async () => {
   const oldTeam = await Team.create({ name: 'Old team', mascot: 'Old' });
   const user = await User.create({ name: 'Mona', email: 'mona@example.com', fitnessGoal: 'endurance', team: oldTeam._id });
   await Team.updateOne({ _id: oldTeam._id }, { $addToSet: { members: user._id } });
   const response = await request(app).post('/api/teams').send({ name: 'New team', mascot: 'New', members: [user.id] });
-  expect(response.status).toBe(201);
-  expect((await User.findById(user._id))?.team?.toString()).toBe(response.body.team._id);
-  expect((await Team.findById(oldTeam._id))?.members).toHaveLength(0);
+  expect(response.status).toBe(400);
+  expect((await User.findById(user._id))?.team?.toString()).toBe(oldTeam.id);
+  expect((await Team.findById(oldTeam._id))?.members.map(String)).toEqual([user.id]);
+  expect(await Team.countDocuments()).toBe(1);
+});
+
+it('does not assign a user to two concurrently created teams', async () => {
+  const user = await User.create({ name: 'Mona', email: 'mona@example.com', fitnessGoal: 'endurance' });
+  const responses = await Promise.all(['Octocats', 'Robocats'].map((name) =>
+    request(app).post('/api/teams').send({ name, mascot: name, members: [user.id] })));
+  expect(responses.filter((response) => response.status === 201)).toHaveLength(1);
+  expect(responses.filter((response) => [400, 409].includes(response.status))).toHaveLength(1);
+  const teams = await Team.find();
+  expect(teams).toHaveLength(1);
+  expect(teams[0].members.map(String)).toEqual([user.id]);
+  expect((await User.findById(user._id))?.team?.toString()).toBe(teams[0].id);
 });

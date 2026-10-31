@@ -1,4 +1,4 @@
-import { isObjectIdOrHexString } from 'mongoose';
+import { isObjectIdOrHexString, Types } from 'mongoose';
 import { Activity, Team, User, Workout } from '../models/index.js';
 
 function fail(message: string, status = 400): never {
@@ -53,10 +53,19 @@ export async function createTeam(input: unknown) {
   if (!Array.isArray(submittedMembers)) fail('members must be an array of user IDs');
   const members = [...new Set(submittedMembers.map((member) => id(member, 'member')))];
   if (await User.countDocuments({ _id: { $in: members } }) !== members.length) fail('Member not found', 404);
-  const team = await Team.create({ name, mascot, members });
+  if (await User.exists({ _id: { $in: members }, team: { $ne: null } })) fail('Members must not already belong to a team');
+  const team = await Team.create({ name, mascot, members: [] });
   if (members.length) {
-    await Team.updateMany({ _id: { $ne: team._id }, members: { $in: members } }, { $pull: { members: { $in: members } } });
-    await User.updateMany({ _id: { $in: members } }, { $set: { team: team._id } });
+    try {
+      const assigned = await User.updateMany({ _id: { $in: members }, team: null }, { $set: { team: team._id } });
+      if (assigned.matchedCount !== members.length) fail('A member was assigned to another team; try again', 409);
+      team.members = members.map((member) => new Types.ObjectId(member));
+      await team.save();
+    } catch (error) {
+      await User.updateMany({ team: team._id }, { $unset: { team: '' } });
+      await Team.deleteOne({ _id: team._id });
+      throw error;
+    }
   }
   return team;
 }
