@@ -29,13 +29,13 @@ OctoFit Tracker is a three-tier application for a school fitness program. API co
 
 ## Implementation decisions
 
-- Presentation tier: React views use the shared API client and loading, empty, success, and error states. `/profiles` provides a user selector, fitness totals, and profile editing.
-- Logic tier: Routes delegate validation and business behavior to explicit service functions.
-- Data tier: Required fields and duration limits live in Mongoose schemas. Activity indexes support team totals and recent user activity. Demo seeding remains non-destructive and idempotent.
-- Activity tracking: Accept 1–1440 minutes and award one point per minute. The activity must reference the user's current team; points and timestamps are server-controlled.
-- Team management: Validate member IDs and claim only unassigned users, rolling back conflicting assignments. Creating a team never moves an existing member from another team. The team creation UI creates an empty team; initial member assignment is supported by the API.
-- Leaderboard: Aggregate points in MongoDB, include teams with zero points, and assign sequential ranks. Ties sort by team name, then ID.
-- Workout suggestions: Prefer workouts matching the user's goal, falling back to the latest activity's focus. Each suggestion explains the match; no matching workouts produces an empty list.
+- Presentation tier decision: React views use the shared API client and loading, empty, success, and error states. `/profiles` provides a user selector, fitness totals, and profile editing.
+- Logic tier decision: Routes delegate validation and business behavior to explicit service functions.
+- Data tier decision: Required fields and duration limits live in Mongoose schemas. Activity indexes support team totals and recent user activity. Demo seeding remains non-destructive and idempotent.
+- Activity tracking approach: Accept 1–1440 minutes and award one point per minute. The activity must reference the user's current team; points and timestamps are server-controlled.
+- Team management approach: Validate member IDs and claim only unassigned users, rolling back conflicting assignments. Creating a team never moves an existing member from another team. The team creation UI creates an empty team; initial member assignment is supported by the API.
+- Leaderboard approach: Aggregate points in MongoDB, include teams with zero points, and assign sequential ranks. Ties sort by team name, then ID.
+- Workout suggestions approach: Prefer workouts matching the user's goal, falling back to the latest activity's focus. Each suggestion explains the match; no matching workouts produces an empty list.
 - Profiles: Seeded demo users can update names and goals. Authentication is intentionally out of scope; keep the API private and use demo data only.
 
 ## Test plan

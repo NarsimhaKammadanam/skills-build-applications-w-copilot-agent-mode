@@ -1,7 +1,9 @@
 import { useState, type FormEvent } from 'react';
-import { sendJson } from '../api/client.js';
+import { getJson, sendJson } from '../api/client.js';
 import { useApi } from '../api/useApi.js';
 import type { Activity, User } from '../api/types.js';
+
+const loadActivities = (path: string) => getJson<{ activities: Activity[] }>(path);
 
 function ActivityForm({ onSaved }: { onSaved: () => void }) {
   const { data, loading, error } = useApi<{ users: User[] }>('/api/users');
@@ -54,7 +56,7 @@ function ActivityForm({ onSaved }: { onSaved: () => void }) {
 }
 
 export default function Activities() {
-  const { data, loading, error, reload } = useApi<{ activities: Activity[] }>('/api/activities');
+  const { data, loading, error, reload } = useApi('/api/activities', loadActivities);
   const [showForm, setShowForm] = useState(false);
   return <section><h2>Activities</h2>
     <button className="btn btn-outline-primary mb-3" aria-expanded={showForm} onClick={() => setShowForm(!showForm)}>{showForm ? 'Close activity form' : 'Log activity'}</button>

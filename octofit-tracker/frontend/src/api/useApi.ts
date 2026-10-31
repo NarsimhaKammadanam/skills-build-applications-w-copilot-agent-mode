@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { getJson } from './client.js';
 
-export function useApi<T>(path: string) {
+export function useApi<T>(path: string, load: (path: string) => Promise<T> = getJson) {
   const [data, setData] = useState<T | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -11,7 +11,7 @@ export function useApi<T>(path: string) {
     let active = true;
     setLoading(true);
     setError('');
-    getJson<T>(path).then((result) => {
+    load(path).then((result) => {
       if (active) setData(result);
     }).catch((failure: unknown) => {
       if (active) setError(`Unable to load data: ${failure instanceof Error ? failure.message : 'Unknown error'}`);
@@ -19,7 +19,7 @@ export function useApi<T>(path: string) {
       if (active) setLoading(false);
     });
     return () => { active = false; };
-  }, [path, version]);
+  }, [path, version, load]);
 
   return { data, loading, error, reload: () => setVersion((value) => value + 1) };
 }

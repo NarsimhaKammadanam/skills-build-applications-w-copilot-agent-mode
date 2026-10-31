@@ -1,10 +1,12 @@
 import { useState, type FormEvent } from 'react';
-import { sendJson } from '../api/client.js';
+import { getJson, sendJson } from '../api/client.js';
 import { useApi } from '../api/useApi.js';
 import type { Team } from '../api/types.js';
 
+const loadTeams = (path: string) => getJson<{ teams: Team[] }>(path);
+
 export default function Teams() {
-  const { data, loading, error, reload } = useApi<{ teams: Team[] }>('/api/teams');
+  const { data, loading, error, reload } = useApi('/api/teams', loadTeams);
   const [name, setName] = useState('');
   const [mascot, setMascot] = useState('');
   const [saving, setSaving] = useState(false);

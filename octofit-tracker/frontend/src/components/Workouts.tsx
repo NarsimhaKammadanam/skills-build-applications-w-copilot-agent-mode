@@ -1,11 +1,14 @@
 import { useState, type FormEvent } from 'react';
+import { getJson } from '../api/client.js';
 import { useApi } from '../api/useApi.js';
 import type { Workout } from '../api/types.js';
+
+const loadWorkouts = (path: string) => getJson<{ suggestions: Workout[] }>(path);
 
 export default function Workouts() {
   const [email, setEmail] = useState('mona@example.com');
   const [selectedEmail, setSelectedEmail] = useState(email);
-  const { data, loading, error, reload } = useApi<{ suggestions: Workout[] }>(`/api/workouts/suggestions/${encodeURIComponent(selectedEmail)}`);
+  const { data, loading, error, reload } = useApi(`/api/workouts/suggestions/${encodeURIComponent(selectedEmail)}`, loadWorkouts);
   function submit(event: FormEvent) {
     event.preventDefault();
     if (email.trim() === selectedEmail) reload();
