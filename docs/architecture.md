@@ -37,13 +37,46 @@ OctoFit Tracker is a three-tier application for a school fitness program. The st
 - Workout suggestions approach: Match a user by email and base the recommendation focus on their goal or recent activity, with an explanatory reason.
 
 ## Test plan
-Use failing tests and explicit contracts to bound Copilot's work.
-Implement and test Mongoose data models and representative seed data.
-Implement and test Express API behavior, including validation and error states.
-Implement and test React routes and API-driven user experiences.
+Use the existing contract tests as acceptance criteria. Work in small slices: run the closest test after each change, keep data, API, and presentation responsibilities in their own tiers, and do not weaken or rewrite a contract to make an implementation pass. Keep the configured ports unchanged and leave authentication out of scope.
 
-- Data tier: `npm run test:data --prefix octofit-tracker/backend` — failures indicate model, persistence, or seed-data issues.
-- API: `npm run test:api --prefix octofit-tracker/backend` — failures indicate incorrect route behavior, validation, responses, or status codes.
-- Frontend: `npm test --prefix octofit-tracker/frontend` — failures indicate client behavior or UI regressions.
-- Backend build: `npm run build --prefix octofit-tracker/backend` — failures indicate TypeScript or backend compilation errors.
-- Frontend build: `npm run build --prefix octofit-tracker/frontend` — failures indicate type-checking or production-bundling errors.
+### 1. Data tier
+
+Run `npm run test:data --prefix octofit-tracker/backend`.
+
+- Confirm users require a name, email, and fitness goal.
+- Confirm teams require a name and mascot, default `members` to an empty array, and retain member IDs.
+- Confirm activities require a type, user, team, minutes, points, and occurrence date.
+- Confirm workouts require a title, focus, duration, and difficulty.
+- Confirm seeding creates representative records for all capabilities, is idempotent, preserves unrelated records, and moves an existing seeded user out of their previous team's membership when their team changes.
+
+Failures here point to Mongoose schema or seed behavior. Complete this tier before relying on API persistence behavior.
+
+### 2. Logic tier
+
+Run `npm run test:api --prefix octofit-tracker/backend`. The API contract tests use an isolated in-memory MongoDB and clear their fixture collections between cases.
+
+- **Activities:** reject missing or malformed input and malformed or nonexistent user/team IDs with deliberate 4xx responses; do not persist rejected records or expose Mongoose cast errors as 500s. For valid input, return `201`, persist the user, team, type, and minutes, compute positive points and an occurrence date, and return the record from `GET /api/activities`.
+- **Teams:** reject a missing name with `400`; create and list a valid team while preserving its name, mascot, and member IDs.
+- **Leaderboard:** sum activity points per team, sort descending, and assign ranks starting at 1.
+- **Workout suggestions:** for a known user's email, recommend a workout whose focus reflects their goal or recent activity and include a reason; return a deliberate 4xx for an unknown email.
+
+Failures here point to service logic, request validation, route responses, or status codes. Keep business behavior in services and HTTP behavior in routes.
+
+### 3. Presentation tier
+
+Run `npm test --prefix octofit-tracker/frontend`. The tests mock `fetch`, so they verify UI behavior without requiring live API or database processes.
+
+- Verify each route requests its API data and renders returned activity, team, leaderboard, or workout content.
+- Verify workout suggestions request the expected user's email.
+- For all four routes, verify a pending request announces a loading state, an empty response shows a meaningful empty state, and a failed response shows an accessible alert.
+
+Failures here point to API-client integration, rendering, or missing user-facing request states. Use accessible status and alert semantics for the loading and error states.
+
+### 4. Build gates
+
+After the contract tests pass, run both builds:
+
+- `npm run build --prefix octofit-tracker/backend` checks backend TypeScript compilation.
+- `npm run build --prefix octofit-tracker/frontend` checks frontend TypeScript and creates the Vite production bundle.
+
+Build failures indicate type or bundling issues that contract tests may not cover. A completed change passes when its tier's contract suite and build gate pass, with earlier tier suites kept green.
